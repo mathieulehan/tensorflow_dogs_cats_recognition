@@ -12,10 +12,11 @@ You will have to include the unzipped /train folder in the project's root.
 
 ## Usage
 
-Once you have all necessay images and folders, you can :
+Once you have all necessary images and folders, you can :
 - generate and save a one block model (with convolutions) using baseCnnModel.py
 - generate and save a three blocks model (with convolutions) using threeBlocksVggModel.py
 - generate and save a model with dropout regularization using preProcessIntoStandardDirectories.py
+- generate and save a model trained to recognize multiple species (from finalize_dogs_vs_cats folder) using multipleSpeciesModel.py
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
