@@ -67,6 +67,8 @@ def run_test_harness():
     # fit model
     history = model.fit_generator(train_it, steps_per_epoch=len(train_it),
                                   validation_data=test_it, validation_steps=len(test_it), epochs=50, verbose=0)
+    # save model
+    model.save('dropOutModel.h5')
     # evaluate model
     _, acc = model.evaluate_generator(test_it, steps=len(test_it), verbose=0)
     print('> %.3f' % (acc * 100.0))
