@@ -1,10 +1,30 @@
 # save the final model to file
+import sys
 from keras.applications.vgg16 import VGG16
 from keras.models import Model
 from keras.layers import Dense
 from keras.layers import Flatten
 from keras.optimizers import SGD
 from keras.preprocessing.image import ImageDataGenerator
+from matplotlib import pyplot
+
+
+# plot diagnostic learning curves
+def summarize_diagnostics(history):
+    # plot loss
+    pyplot.subplot(211)
+    pyplot.title('Cross Entropy Loss')
+    pyplot.plot(history.history['loss'], color='blue', label='train')
+    pyplot.plot(history.history['val_loss'], color='orange', label='test')
+    # plot accuracy
+    pyplot.subplot(212)
+    pyplot.title('Classification Accuracy')
+    pyplot.plot(history.history['accuracy'], color='blue', label='train')
+    pyplot.plot(history.history['val_accuracy'], color='orange', label='test')
+    # save plot to file
+    filename = sys.argv[0].split('/')[-1]
+    pyplot.savefig(filename + '_plot.png')
+    pyplot.close()
 
 
 # define cnn model
@@ -34,10 +54,22 @@ def run_test_harness():
     datagen = ImageDataGenerator(featurewise_center=True)
     # specify imagenet mean values for centering
     datagen.mean = [123.68, 116.779, 103.939]
-    # prepare iterator
-    train_it = datagen.flow_from_directory('finalize_dogs_vs_cats/train', class_mode='categorical', batch_size=32, target_size=(224, 224))
+    # prepare iterators
+    train_it = datagen.flow_from_directory('20species75train25test/train', class_mode='categorical', batch_size=64,
+                                           target_size=(224, 224))
+    test_it = datagen.flow_from_directory('20species75train25test/test', class_mode='categorical', batch_size=64,
+                                          target_size=(224, 224))
     # fit model
-    model.fit_generator(train_it, steps_per_epoch=len(train_it), epochs=10, verbose=0)
+    history = model.fit_generator(train_it, steps_per_epoch=len(train_it), validation_data=test_it,
+                                  validation_steps=len(test_it), epochs=10, verbose=1)
+
+    # save model
+    model.save('model_20species75train25test')
+    # evaluate model
+    _, acc = model.evaluate_generator(test_it, steps=len(test_it), verbose=1)
+    print('> %.3f' % (acc * 100.0))
+    # learning curves
+    summarize_diagnostics(history)
 
 
 # entry point, run the test harness
