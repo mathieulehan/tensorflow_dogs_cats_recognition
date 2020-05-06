@@ -1,12 +1,14 @@
 # save the final model to file
+import os
 import sys
-from keras.applications.vgg16 import VGG16
-from keras.models import Model
-from keras.layers import Dense
-from keras.layers import Flatten
-from keras.optimizers import SGD
-from keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.applications.vgg16 import VGG16
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Flatten
+from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from matplotlib import pyplot
+from tensorflow.keras.utils import plot_model
 
 
 # plot diagnostic learning curves
@@ -37,7 +39,7 @@ def define_model():
     # add new classifier layers
     flat1 = Flatten()(model.layers[-1].output)
     class1 = Dense(128, activation='relu', kernel_initializer='he_uniform')(flat1)
-    output = Dense(10, activation='softmax')(class1)
+    output = Dense(5, activation='softmax')(class1)
     # define new model
     model = Model(inputs=model.inputs, outputs=output)
     # compile model
@@ -48,6 +50,7 @@ def define_model():
 
 # run the test harness for evaluating a model
 def run_test_harness():
+    modelName = 'model_5species75train25test';
     # define model
     model = define_model()
     # create data generator
@@ -55,19 +58,26 @@ def run_test_harness():
     # specify imagenet mean values for centering
     datagen.mean = [123.68, 116.779, 103.939]
     # prepare iterators
-    train_it = datagen.flow_from_directory('20species75train25test/train', class_mode='categorical', batch_size=64,
+    train_it = datagen.flow_from_directory('5species75train25test/train', class_mode='categorical', batch_size=32,
                                            target_size=(224, 224))
-    test_it = datagen.flow_from_directory('20species75train25test/test', class_mode='categorical', batch_size=64,
+    test_it = datagen.flow_from_directory('5species75train25test/test', class_mode='categorical', batch_size=32,
                                           target_size=(224, 224))
     # fit model
-    history = model.fit_generator(train_it, steps_per_epoch=len(train_it), validation_data=test_it,
-                                  validation_steps=len(test_it), epochs=10, verbose=1)
+    history = model.fit(train_it, steps_per_epoch=len(train_it), validation_data=test_it,
+                        validation_steps=len(test_it), epochs=20, verbose=1)
 
-    # save model
-    model.save('model_20species75train25test')
+    # save model (keras format)
+    model.save(modelName)
+
+    # save model (tensorflow format) : tfjs.convert_to_tensor(model)
+
     # evaluate model
     _, acc = model.evaluate_generator(test_it, steps=len(test_it), verbose=1)
     print('> %.3f' % (acc * 100.0))
+
+    # plot model
+    plot_model(model, to_file=modelName + '.png')
+
     # learning curves
     summarize_diagnostics(history)
 
