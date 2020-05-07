@@ -1,7 +1,14 @@
 # save the final model to file
 import os
 import sys
+import pydot
+
 from tensorflow.keras.applications.vgg16 import VGG16
+from tensorflow.keras.applications.vgg19 import VGG19
+from tensorflow.keras.applications.densenet import DenseNet201
+from tensorflow.keras.applications.inception_v3 import InceptionV3
+from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2
+from tensorflow.keras.applications.nasnet import NASNetMobile
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.layers import Flatten
@@ -9,6 +16,15 @@ from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from matplotlib import pyplot
 from tensorflow.keras.utils import plot_model
+import tensorflow as tf
+
+config = tf.compat.v1.ConfigProto(gpu_options=
+                                  tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.5)
+                                  # device_count = {'GPU': 1}
+                                  )
+config.gpu_options.allow_growth = True
+session = tf.compat.v1.Session(config=config)
+tf.compat.v1.keras.backend.set_session(session)
 
 
 # plot diagnostic learning curves
@@ -25,14 +41,14 @@ def summarize_diagnostics(history):
     pyplot.plot(history.history['val_accuracy'], color='orange', label='test')
     # save plot to file
     filename = sys.argv[0].split('/')[-1]
-    pyplot.savefig(filename + '_plot.png')
+    pyplot.savefig(filename + '_nasnetMobile_plot.png')
     pyplot.close()
 
 
 # define cnn model
 def define_model():
     # load model
-    model = VGG16(include_top=False, input_shape=(224, 224, 3))
+    model = NASNetMobile(include_top=False, input_shape=(224, 224, 3))
     # mark loaded layers as not trainable
     for layer in model.layers:
         layer.trainable = False
@@ -50,7 +66,7 @@ def define_model():
 
 # run the test harness for evaluating a model
 def run_test_harness():
-    modelName = 'model_5species75train25test';
+    modelName = 'nasnetMobile_5species75train25'
     # define model
     model = define_model()
     # create data generator
@@ -66,13 +82,14 @@ def run_test_harness():
     history = model.fit(train_it, steps_per_epoch=len(train_it), validation_data=test_it,
                         validation_steps=len(test_it), epochs=20, verbose=1)
 
-    # save model (keras format)
+    # save model (.h5 format)
+    model.save(modelName + '.h5')
+
+    # save model (.pb format)
     model.save(modelName)
 
-    # save model (tensorflow format) : tfjs.convert_to_tensor(model)
-
     # evaluate model
-    _, acc = model.evaluate_generator(test_it, steps=len(test_it), verbose=1)
+    _, acc = model.evaluate(test_it, steps=len(test_it), verbose=1)
     print('> %.3f' % (acc * 100.0))
 
     # plot model
